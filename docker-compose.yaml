@@ -1,27 +1,43 @@
 version: '3.8'
 
-services:
-  # --- Base de configuração para Rails e Sidekiq ---
-  base: &base
-    image: ghcr.io/fazer-ai/chatwoot:v4.10.0-fazer-ai.15
-    # env_file: .env  <-- REMOVIDO: O Portainer vai injetar as variáveis
-    volumes:
-      - storage_data:/app/storage
-    environment:
-      - RAILS_ENV=production
-      - NODE_ENV=production
-      # Permite que o Rails aceite conexões vindas do Nginx/Swarm
-      - RAILS_SERVE_STATIC_FILES=true 
-      - RAILS_LOG_TO_STDOUT=true
+# 1. Mudamos de "services -> base" para "x-base". 
+# Isso impede que o Docker crie um container inútil chamado "base" que fica dando erro.
+x-base: &base
+  image: ghcr.io/fazer-ai/chatwoot:v4.10.0-fazer-ai.15
+  volumes:
+    - storage_data:/app/storage
+  # 2. AQUI ESTÁ A CORREÇÃO: Listamos as variáveis explicitamente
+  environment:
+    - RAILS_ENV=${RAILS_ENV}
+    - NODE_ENV=production
+    - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+    - FRONTEND_URL=${FRONTEND_URL}
+    - POSTGRES_HOST=${POSTGRES_HOST}
+    - POSTGRES_PORT=${POSTGRES_PORT}
+    - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+    - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - REDIS_URL=${REDIS_URL}
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - MAILER_SENDER_EMAIL=${MAILER_SENDER_EMAIL}
+    - SMTP_ADDRESS=${SMTP_ADDRESS}
+    - SMTP_PORT=${SMTP_PORT}
+    - SMTP_USERNAME=${SMTP_USERNAME}
+    - SMTP_PASSWORD=${SMTP_PASSWORD}
+    - SMTP_AUTHENTICATION=${SMTP_AUTHENTICATION}
+    - SMTP_ENABLE_STARTTLS_AUTO=${SMTP_ENABLE_STARTTLS_AUTO}
+    - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE}
+    - FORCE_SSL=${FORCE_SSL}
+    - RAILS_LOG_TO_STDOUT=true
+    - RAILS_SERVE_STATIC_FILES=true
 
-  # --- Aplicação Principal ---
+services:
   rails:
     <<: *base
     depends_on:
       - postgres
       - redis
     ports:
-      # Liberado para 0.0.0.0 para o Nginx/Swarm conseguir acessar
       - "3010:3000"
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
@@ -30,7 +46,6 @@ services:
       restart_policy:
         condition: on-failure
 
-  # --- Processamento em Segundo Plano ---
   sidekiq:
     <<: *base
     depends_on:
@@ -42,7 +57,6 @@ services:
       restart_policy:
         condition: on-failure
 
-  # --- Banco de Dados ---
   postgres:
     image: pgvector/pgvector:pg16
     ports:
@@ -50,15 +64,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=chatwoot_production
-      - POSTGRES_USER=postgres
-      # A senha virá das variáveis do Portainer
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     deploy:
       restart_policy:
         condition: on-failure
 
-  # --- Redis ---
   redis:
     image: redis:alpine
     command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
