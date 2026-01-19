@@ -1,12 +1,11 @@
 version: '3.8'
 
-# 1. Mudamos de "services -> base" para "x-base". 
-# Isso impede que o Docker crie um container inútil chamado "base" que fica dando erro.
+# --- Definição Base (x-base) ---
+# Usamos 'x-base' para não criar um container extra inútil, apenas servindo de molde.
 x-base: &base
   image: ghcr.io/fazer-ai/chatwoot:v4.10.0-fazer-ai.15
   volumes:
     - storage_data:/app/storage
-  # 2. AQUI ESTÁ A CORREÇÃO: Listamos as variáveis explicitamente
   environment:
     - RAILS_ENV=${RAILS_ENV}
     - NODE_ENV=production
@@ -32,20 +31,26 @@ x-base: &base
     - RAILS_SERVE_STATIC_FILES=true
 
 services:
+  # --- Aplicação Principal (Rails) ---
   rails:
     <<: *base
     depends_on:
       - postgres
       - redis
     ports:
+      # Mapeia a porta 3010 do host para a 3000 do container
       - "3010:3000"
     entrypoint: docker/entrypoints/rails.sh
-    command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
+    # CORREÇÃO CRÍTICA AQUI:
+    # O comando abaixo roda 'db:chatwoot_prepare' para criar o banco se ele não existir
+    # e depois sobe o servidor. Sem isso, dá erro de 'UndefinedTable'.
+    command: ['sh', '-c', 'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0']
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
 
+  # --- Processamento de Fundo (Sidekiq) ---
   sidekiq:
     <<: *base
     depends_on:
@@ -57,6 +62,7 @@ services:
       restart_policy:
         condition: on-failure
 
+  # --- Banco de Dados (Postgres) ---
   postgres:
     image: pgvector/pgvector:pg16
     ports:
@@ -71,6 +77,7 @@ services:
       restart_policy:
         condition: on-failure
 
+  # --- Cache (Redis) ---
   redis:
     image: redis:alpine
     command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
