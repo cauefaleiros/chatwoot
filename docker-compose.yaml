@@ -22,7 +22,7 @@ services:
       - redis
     ports:
       # Liberado para 0.0.0.0 para o Nginx/Swarm conseguir acessar
-      - "3000:3000"
+      - "3010:3000"
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     deploy:
