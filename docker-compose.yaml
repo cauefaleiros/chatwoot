@@ -1,9 +1,7 @@
 version: '3.8'
 
-# --- Definição Base (x-base) ---
-# Usamos 'x-base' para não criar um container extra inútil, apenas servindo de molde.
 x-base: &base
-  image: ghcr.io/fazer-ai/chatwoot:v4.10.0-fazer-ai.15
+  image: ghcr.io/cauefaleiros/chatwoot:latest
   volumes:
     - storage_data:/app/storage
   environment:
@@ -31,38 +29,71 @@ x-base: &base
     - RAILS_SERVE_STATIC_FILES=true
 
 services:
-  # --- Aplicação Principal (Rails) ---
   rails:
     <<: *base
     depends_on:
       - postgres
       - redis
     ports:
-      # Mapeia a porta 3010 do host para a 3000 do container
-      - "3010:3000"
+      - '3010:3000'
     entrypoint: docker/entrypoints/rails.sh
-    # CORREÇÃO CRÍTICA AQUI:
-    # O comando abaixo roda 'db:chatwoot_prepare' para criar o banco se ele não existir
-    # e depois sobe o servidor. Sem isso, dá erro de 'UndefinedTable'.
-    command: ['sh', '-c', 'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0']
+    command:
+      [
+        'sh',
+        '-c',
+        'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0',
+      ]
+
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --no-verbose --tries=1 --spider http://localhost:3000/hc || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
     deploy:
       replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        order: stop-first
       restart_policy:
         condition: on-failure
+      labels:
+        - 'com.docker.swarm.image.pull=always'
 
-  # --- Processamento de Fundo (Sidekiq) ---
   sidekiq:
     <<: *base
+    image: ghcr.io/cauefaleiros/chatwoot:latest
     depends_on:
       - postgres
       - redis
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f sidekiq || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
     deploy:
       replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        order: stop-first
       restart_policy:
         condition: on-failure
+      labels:
+        - 'com.docker.swarm.image.pull=always'
 
-  # --- Banco de Dados (Postgres) ---
   postgres:
     image: pgvector/pgvector:pg16
     ports:
@@ -77,10 +108,9 @@ services:
       restart_policy:
         condition: on-failure
 
-  # --- Cache (Redis) ---
   redis:
     image: redis:alpine
-    command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
+    command: ['sh', '-c', 'redis-server --requirepass "$REDIS_PASSWORD"']
     volumes:
       - redis_data:/data
     ports:
