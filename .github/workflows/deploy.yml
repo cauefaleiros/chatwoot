@@ -46,6 +46,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 🔥 ESSENCIAL: sem isso o docker-compose.yaml NÃO EXISTE
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # jq não é garantido no runner
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Deploy to Portainer
         run: |
           curl -X POST \
@@ -67,7 +75,7 @@ jobs:
           echo "Update state: $RESULT"
 
           if [ "$RESULT" != "\"completed\"" ]; then
-            echo "⚠ Rollout_FAILED — swarm irá rollback automaticamente"
+            echo "⚠ Rollout FAILED — Swarm fará rollback automático"
             exit 1
           else
             echo "✔ Rollout OK"
