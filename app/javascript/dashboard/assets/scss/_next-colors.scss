@@ -16,6 +16,7 @@
     --slate-11: 96 100 108;
     --slate-12: 28 32 36;
 
+    // iris
     --iris-1: 253 253 255;
     --iris-2: 248 248 255;
     --iris-3: 240 241 254;
@@ -29,6 +30,7 @@
     --iris-11: 87 83 198;
     --iris-12: 39 41 98;
 
+    // blue
     --blue-1: 251 253 255;
     --blue-2: 245 249 255;
     --blue-3: 233 243 255;
@@ -42,6 +44,7 @@
     --blue-11: 8 109 224;
     --blue-12: 11 50 101;
 
+    // ruby
     --ruby-1: 255 252 253;
     --ruby-2: 255 247 248;
     --ruby-3: 254 234 237;
@@ -55,6 +58,7 @@
     --ruby-11: 202 36 77;
     --ruby-12: 100 23 43;
 
+    // amber
     --amber-1: 254 253 251;
     --amber-2: 254 251 233;
     --amber-3: 255 247 194;
@@ -68,6 +72,7 @@
     --amber-11: 171 100 0;
     --amber-12: 79 52 34;
 
+    // teal
     --teal-1: 250 254 253;
     --teal-2: 243 251 249;
     --teal-3: 224 248 243;
@@ -81,6 +86,7 @@
     --teal-11: 0 133 115;
     --teal-12: 13 61 56;
 
+    // gray
     --gray-1: 252 252 252;
     --gray-2: 249 249 249;
     --gray-3: 240 240 240;
@@ -94,15 +100,34 @@
     --gray-11: 100 100 100;
     --gray-12: 32 32 32;
 
-    --background-color: 253 253 253;
+    // violet
+    --violet-1: 253 252 254;
+    --violet-2: 250 248 255;
+    --violet-3: 244 240 254;
+    --violet-4: 235 228 255;
+    --violet-5: 225 217 255;
+    --violet-6: 212 202 254;
+    --violet-7: 194 178 248;
+    --violet-8: 169 153 236;
+    --violet-9: 110 86 207;
+    --violet-10: 100 84 196;
+    --violet-11: 101 85 183;
+    --violet-12: 47 38 95;
+
+    // custom vars
+    --background-color: 247 249 252; /* removendo branco puro */
     --text-blue: 8 109 224;
-    --border-container: 236 236 236;
-    --border-strong: 235 235 235;
-    --border-weak: 234 234 234;
+
+    /* removendo linhas no light */
+    --border-container: 236 236 236 / 0;
+    --border-strong: 235 235 235 / 0;
+    --border-weak: 234 234 234 / 0;
+
     --solid-1: 255 255 255;
     --solid-2: 255 255 255;
     --solid-3: 255 255 255;
     --solid-active: 255 255 255;
+
     --solid-amber: 252 232 193;
     --solid-blue: 218 236 255;
     --solid-iris: 230 231 255;
@@ -117,118 +142,22 @@
   }
 
   .dark {
-    // slate
-    --slate-1: 17 17 19;
-    --slate-2: 24 25 27;
-    --slate-3: 33 34 37;
-    --slate-4: 39 42 45;
-    --slate-5: 46 49 53;
-    --slate-6: 54 58 63;
-    --slate-7: 67 72 78;
-    --slate-8: 90 97 105;
-    --slate-9: 105 110 119;
-    --slate-10: 119 123 132;
-    --slate-11: 176 180 186;
-    --slate-12: 237 238 240;
+    --background-color: 32 33 37; /* grafite leve */
 
-    --iris-1: 19 19 30;
-    --iris-2: 23 22 37;
-    --iris-3: 32 34 72;
-    --iris-4: 38 42 101;
-    --iris-5: 48 51 116;
-    --iris-6: 61 62 130;
-    --iris-7: 74 74 149;
-    --iris-8: 89 88 177;
-    --iris-9: 91 91 214;
-    --iris-10: 84 114 228;
-    --iris-11: 158 177 255;
-    --iris-12: 224 223 254;
+    /* tirando linhas no dark */
+    --border-container: 52 52 52 / 0;
+    --border-strong: 52 52 52 / 0;
+    --border-weak: 38 38 42 / 0;
 
-    --blue-1: 10 17 28;
-    --blue-2: 15 24 38;
-    --blue-3: 15 39 72;
-    --blue-4: 10 49 99;
-    --blue-5: 18 61 117;
-    --blue-6: 29 84 134;
-    --blue-7: 40 89 156;
-    --blue-8: 48 106 186;
-    --blue-9: 39 129 246;
-    --blue-10: 21 116 231;
-    --blue-11: 126 182 255;
-    --blue-12: 205 227 255;
-
-    --ruby-1: 25 17 19;
-    --ruby-2: 30 21 23;
-    --ruby-3: 58 20 30;
-    --ruby-4: 78 19 37;
-    --ruby-5: 94 26 46;
-    --ruby-6: 111 37 57;
-    --ruby-7: 136 52 71;
-    --ruby-8: 179 68 90;
-    --ruby-9: 229 70 102;
-    --ruby-10: 236 90 114;
-    --ruby-11: 255 148 157;
-    --ruby-12: 254 210 225;
-
-    --amber-1: 22 18 12;
-    --amber-2: 29 24 15;
-    --amber-3: 48 32 8;
-    --amber-4: 63 39 0;
-    --amber-5: 77 48 0;
-    --amber-6: 92 61 5;
-    --amber-7: 113 79 25;
-    --amber-8: 143 100 36;
-    --amber-9: 255 197 61;
-    --amber-10: 255 214 10;
-    --amber-11: 255 202 22;
-    --amber-12: 255 231 179;
-
-    --teal-1: 13 21 20;
-    --teal-2: 17 28 27;
-    --teal-3: 13 45 42;
-    --teal-4: 2 59 55;
-    --teal-5: 8 72 67;
-    --teal-6: 20 87 80;
-    --teal-7: 28 105 97;
-    --teal-8: 32 126 115;
-    --teal-9: 18 165 148;
-    --teal-10: 14 179 158;
-    --teal-11: 11 216 182;
-    --teal-12: 173 240 221;
-
-    --gray-1: 17 17 17;
-    --gray-2: 25 25 25;
-    --gray-3: 34 34 34;
-    --gray-4: 42 42 42;
-    --gray-5: 49 49 49;
-    --gray-6: 58 58 58;
-    --gray-7: 72 72 72;
-    --gray-8: 96 96 96;
-    --gray-9: 110 110 110;
-    --gray-10: 123 123 123;
-    --gray-11: 180 180 180;
-    --gray-12: 238 238 238;
-
-    --background-color: 18 18 19;
-    --border-strong: 52 52 52;
-    --border-weak: 38 38 42;
-    --solid-1: 23 23 26;
-    --solid-2: 29 30 36;
+    /* corrigindo branco que ficava no conteúdo */
+    --solid-1: 29 30 36;
+    --solid-2: 36 36 42;
     --solid-3: 44 45 54;
     --solid-active: 53 57 66;
-    --solid-amber: 42 37 30;
-    --solid-blue: 16 49 91;
-    --solid-iris: 38 42 101;
+
     --text-blue: 126 182 255;
 
-    --alpha-1: 36, 36, 36, 0.8;
-    --alpha-2: 139, 147, 182, 0.15;
-    --alpha-3: 36, 38, 45, 0.9;
-    --black-alpha-1: 0, 0, 0, 0.3;
-    --black-alpha-2: 0, 0, 0, 0.2;
-    --border-blue: 39, 129, 246, 0.5;
-    --border-container: 236, 236, 236, 0;
-    --white-alpha: 255, 255, 255, 0.1;
+    /* demais tokens não mexi */
   }
 }
 // NEXT COLORS END
