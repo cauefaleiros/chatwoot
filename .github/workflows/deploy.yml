@@ -59,7 +59,7 @@ jobs:
       - name: Deploy to Portainer (Stack Update)
         run: |
           curl -X PUT --insecure \
-            -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.PORTAINER_API_KEY }}" \
             -H "Content-Type: application/json" \
             "https://${{ secrets.PORTAINER_HOST }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
             --data-binary @payload.json
@@ -70,7 +70,7 @@ jobs:
       - name: Check Swarm Update State
         run: |
           RESULT=$(curl -s --insecure \
-            -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.PORTAINER_API_KEY }}" \
             "https://${{ secrets.PORTAINER_HOST }}/api/services" \
             | jq '.[] | select(.Spec.Name=="teste-comchat_rails") | .UpdateStatus.State')
 
