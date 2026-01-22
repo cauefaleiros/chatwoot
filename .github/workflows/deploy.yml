@@ -71,12 +71,12 @@ jobs:
         run: |
           RESULT=$(curl -s --insecure \
             -H "Authorization: Bearer ${{ secrets.PORTAINER_API_KEY }}" \
-            "https://${{ secrets.PORTAINER_HOST }}/api/services" \
-            | jq '.[] | select(.Spec.Name=="teste-comchat_rails") | .UpdateStatus.State')
+            "https://${{ secrets.PORTAINER_HOST }}/api/services?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
+            | jq -r '.[] | select(.Spec.Name=="teste-comchat_rails") | .UpdateStatus.State')
 
           echo "Update state: $RESULT"
 
-          if [ "$RESULT" != "\"completed\"" ]; then
+          if [ "$RESULT" != "completed" ]; then
             echo "⚠ Rollout FAILED — Swarm irá fazer rollback"
             exit 1
           else
