@@ -1,7 +1,7 @@
 version: '3.8'
 
-x-base:
-  &base # NOTE: A imagem será substituída dinamicamente pelo CI/CD para garantir rollback
+x-base: &base
+  # O CI/CD vai substituir essa imagem pela tag correta (SHA)
   image: ghcr.io/cauefaleiros/chatwoot:latest
   volumes:
     - storage_data:/app/storage
@@ -10,7 +10,26 @@ x-base:
     - NODE_ENV=production
     - RAILS_LOG_TO_STDOUT=true
     - RAILS_SERVE_STATIC_FILES=true
-    # ... (demais variáveis injetadas pelo Portainer continuam funcionado) ...
+    # ESTA LISTA ABAIXO É OBRIGATÓRIA NO ARQUIVO DO GITHUB
+    # Sem isso, o deploy sobrescreve a stack e remove o acesso às variáveis do Portainer
+    - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+    - FRONTEND_URL=${FRONTEND_URL}
+    - FORCE_SSL=${FORCE_SSL}
+    - POSTGRES_HOST=${POSTGRES_HOST}
+    - POSTGRES_PORT=${POSTGRES_PORT}
+    - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+    - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - REDIS_URL=${REDIS_URL}
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE}
+    - MAILER_SENDER_EMAIL=${MAILER_SENDER_EMAIL}
+    - SMTP_ADDRESS=${SMTP_ADDRESS}
+    - SMTP_PORT=${SMTP_PORT}
+    - SMTP_USERNAME=${SMTP_USERNAME}
+    - SMTP_PASSWORD=${SMTP_PASSWORD}
+    - SMTP_AUTHENTICATION=${SMTP_AUTHENTICATION}
+    - SMTP_ENABLE_STARTTLS_AUTO=${SMTP_ENABLE_STARTTLS_AUTO}
 
 services:
   rails:
@@ -21,8 +40,6 @@ services:
     ports:
       - '3010:3000'
     entrypoint: docker/entrypoints/rails.sh
-    # Executa prepare (migrations) e sobe o server.
-    # O '&&' garante que o server só sobe se a migration passar.
     command:
       [
         'sh',
@@ -36,21 +53,20 @@ services:
           'CMD-SHELL',
           'wget --no-verbose --tries=1 --spider http://localhost:3000/hc || exit 1',
         ]
-      interval: 30s # Aumentado para reduzir carga
+      interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s # CRÍTICO: Dá 2 minutos pro Rails subir e rodar migrations antes de falhar
+      start_period: 120s
 
     deploy:
       replicas: 1
       update_config:
         parallelism: 1
         delay: 30s
-        order: start-first # Sobe o novo, espera ficar saudável, depois mata o velho
+        order: start-first
         failure_action: rollback
-        monitor: 150s # Tempo para monitorar se o novo deploy ficou estável (maior que o start_period)
+        monitor: 150s
       rollback_config:
-        parallelism: 1
         order: stop-first
       restart_policy:
         condition: on-failure
@@ -71,7 +87,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s # CRÍTICO: Sidekiq também demora pra carregar o ambiente Rails
+      start_period: 120s
 
     deploy:
       replicas: 1
@@ -84,7 +100,6 @@ services:
       labels:
         - 'com.docker.swarm.image.pull=always'
 
-  # ... (postgres e redis mantêm-se iguais) ...
   postgres:
     image: pgvector/pgvector:pg16
     ports:
@@ -106,6 +121,8 @@ services:
       - redis_data:/data
     ports:
       - '6379:6379'
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     deploy:
       restart_policy:
         condition: on-failure
