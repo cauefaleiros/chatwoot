@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.sha_tag }} # Exporta a tag para usar no job de deploy
 
     steps:
       - uses: actions/checkout@v4
@@ -21,24 +23,21 @@ jobs:
       - name: Extract Image Tags
         id: vars
         run: |
+          # Usamos o short SHA para criar uma tag única e imutável
           SHA_TAG=sha-${GITHUB_SHA::7}
-          VERSION_TAG=v4.10-custom-1
           echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         run: |
           docker build \
             -t ghcr.io/cauefaleiros/chatwoot:latest \
             -t ghcr.io/cauefaleiros/chatwoot:${{ steps.vars.outputs.sha_tag }} \
-            -t ghcr.io/cauefaleiros/chatwoot:${{ steps.vars.outputs.version_tag }} \
             -f docker/Dockerfile .
 
       - name: Push Docker Image
         run: |
           docker push ghcr.io/cauefaleiros/chatwoot:latest
           docker push ghcr.io/cauefaleiros/chatwoot:${{ steps.vars.outputs.sha_tag }}
-          docker push ghcr.io/cauefaleiros/chatwoot:${{ steps.vars.outputs.version_tag }}
 
   deploy:
     needs: build
@@ -48,7 +47,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare stack payload
+        # AQUI ESTÁ A MÁGICA:
+        # Substituímos a tag 'latest' pela tag específica do build (ex: sha-a1b2c3d)
+        # Isso garante que o Portainer saiba EXATAMENTE qual versão implantar.
+        # Se falhar, o Portainer sabe qual era a versão anterior exata para fazer rollback.
         run: |
+          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+          sed -i "s|ghcr.io/cauefaleiros/chatwoot:latest|ghcr.io/cauefaleiros/chatwoot:$IMAGE_TAG|g" docker-compose.yaml
+
           jq -n \
             --arg content "$(sed 's/"/\\"/g' docker-compose.yaml)" \
             '{ stackFileContent: $content, prune: true }' \
@@ -62,5 +68,6 @@ jobs:
             "https://${{ secrets.PORTAINER_HOST }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
             --data-binary @payload.json
 
-      - name: Wait for rollout
-        run: sleep 20
+      # Aumentei o sleep pois o Docker Swarm demora um pouco para processar o update
+      - name: Wait for rollout trigger
+        run: sleep 30
