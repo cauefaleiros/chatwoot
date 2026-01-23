@@ -1,7 +1,6 @@
 version: '3.8'
 
 x-base: &base
-  # O CI/CD vai substituir essa imagem pela tag correta (SHA)
   image: ghcr.io/cauefaleiros/chatwoot:latest
   volumes:
     - storage_data:/app/storage
@@ -10,8 +9,7 @@ x-base: &base
     - NODE_ENV=production
     - RAILS_LOG_TO_STDOUT=true
     - RAILS_SERVE_STATIC_FILES=true
-    # ESTA LISTA ABAIXO É OBRIGATÓRIA NO ARQUIVO DO GITHUB
-    # Sem isso, o deploy sobrescreve a stack e remove o acesso às variáveis do Portainer
+    # LISTA COMPLETA DE VARIÁVEIS (Obrigatório para o Swarm injetar)
     - SECRET_KEY_BASE=${SECRET_KEY_BASE}
     - FRONTEND_URL=${FRONTEND_URL}
     - FORCE_SSL=${FORCE_SSL}
@@ -32,20 +30,34 @@ x-base: &base
     - SMTP_ENABLE_STARTTLS_AUTO=${SMTP_ENABLE_STARTTLS_AUTO}
 
 services:
+  # --- SERVIÇO NOVO: MIGRATION ---
+  # Responsável apenas por preparar o banco. Roda e morre.
+  migration:
+    <<: *base
+    depends_on:
+      - postgres
+      - redis
+    # Comando único para preparar o banco
+    command: ['bundle', 'exec', 'rails', 'db:chatwoot_prepare']
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure  # Só reinicia se der erro. Se der sucesso (exit 0), ele para.
+      # Não precisa de healthcheck complexo pois é um job curto
+
+  # --- SERVIÇO PRINCIPAL: RAILS ---
   rails:
     <<: *base
     depends_on:
       - postgres
       - redis
+      # Em Swarm, o depends_on não espera a tarefa terminar, 
+      # mas garante que a rede esteja pronta.
     ports:
       - '3010:3000'
     entrypoint: docker/entrypoints/rails.sh
-    command:
-      [
-        'sh',
-        '-c',
-        'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0',
-      ]
+    # MUDANÇA: Comando limpo, apenas sobe o servidor
+    command: ['sh', '-c', 'bundle exec rails s -p 3000 -b 0.0.0.0']
 
     healthcheck:
       test:
@@ -56,7 +68,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      # MUDANÇA: start_period reduzido, pois não roda migration aqui
+      start_period: 60s 
 
     deploy:
       replicas: 1
@@ -65,7 +78,7 @@ services:
         delay: 30s
         order: start-first
         failure_action: rollback
-        monitor: 150s
+        monitor: 60s
       rollback_config:
         order: stop-first
       restart_policy:
@@ -87,14 +100,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 60s
 
     deploy:
       replicas: 1
       update_config:
         order: start-first
         failure_action: rollback
-        monitor: 150s
+        monitor: 60s
       restart_policy:
         condition: on-failure
       labels:
